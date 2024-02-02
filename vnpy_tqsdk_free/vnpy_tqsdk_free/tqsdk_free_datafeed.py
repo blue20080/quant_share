@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import List, Optional
+from typing import List, Optional, Callable
 from pytz import timezone
 import traceback
 
@@ -13,7 +13,7 @@ from vnpy.trader.object import BarData, HistoryRequest
 
 
 INTERVAL_VT2TQ = {
-    Interval.MINUTE: 60,
+    Interval.MINUTE: 60 * 15,
     Interval.HOUR: 60 * 60,
     Interval.DAILY: 60 * 60 * 24,
     Interval.TICK: 0
@@ -34,13 +34,13 @@ class TqsdkDatafeed(BaseDatafeed):
         self.username: str = SETTINGS["datafeed.username"]
         self.password: str = SETTINGS["datafeed.password"]
 
-    def query_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
+    def query_bar_history(self, req: HistoryRequest, output: Callable = print) -> Optional[List[BarData]]:
         """查询k线数据"""
         # 初始化API
         try:
             api = TqApi(auth=TqAuth(self.username, self.password))
         except Exception:
-            traceback.print_exc()
+            output(traceback.format_exc())
             return None
 
         # 查询数据
@@ -62,7 +62,8 @@ class TqsdkDatafeed(BaseDatafeed):
         data_length = int((req.end - req.start).total_seconds() / INTERVAL_VT2TQ[req.interval])
         df: pd.DataFrame = api.get_kline_serial(
             symbol=tq_symbol,
-            duration_seconds=INTERVAL_VT2TQ[req.interval],
+            #duration_seconds=INTERVAL_VT2TQ[req.interval],
+            duration_seconds=5*60,
             data_length=data_length
         )
 
